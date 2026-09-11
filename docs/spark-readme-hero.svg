@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="title desc">
+  <title id="title">T3 Code on cobec-spark</title>
+  <desc id="desc">Fork of pingdotgg/t3code  Spark LAN :5733, not Funnel</desc>
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2EC4B6" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#C45C26" stop-opacity="0.12"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#2EC4B6" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="320" fill="#071422"/>
+  <rect width="1280" height="320" fill="url(#grid)"/>
+  <rect x="0" y="0" width="8" height="320" fill="#2EC4B6"/>
+  <rect x="8" y="0" width="4" height="320" fill="#C45C26"/>
+  <circle cx="1160" cy="80" r="210" fill="url(#glow)"/>
+  <g transform="translate(72,64)">
+    <rect width="192" height="192" rx="36" fill="#0B1E30" stroke="#2EC4B6" stroke-width="2"/>
+    <path d="M58 72 L36 96 L58 120" fill="none" stroke="#2EC4B6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M134 72 L156 96 L134 120" fill="none" stroke="#2EC4B6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M108 56 L84 136" stroke="#C45C26" stroke-width="8" stroke-linecap="round"/>
+    <path d="M96 28 L108 52 L84 52 Z" fill="#C45C26"/>
+  </g>
+  <text x="300" y="120" fill="#E8F4F2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="48" font-weight="700">T3 Code · cobec-spark</text>
+  <text x="300" y="170" fill="#8FB8B3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22">Spark LAN :5733  coding-agent GUI, not on Funnel</text>
+  <g transform="translate(300,200)">
+    <rect width="148" height="36" rx="18" fill="#122A38" stroke="#C45C26" stroke-width="1.5"/>
+    <text x="74" y="24" text-anchor="middle" fill="#E8B089" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600" letter-spacing="0.08em">SPARK TOOLS</text>
+  </g>
+</svg>
