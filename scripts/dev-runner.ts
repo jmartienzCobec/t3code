@@ -168,8 +168,16 @@ export function createDevRunnerEnv({
 
     if (!isDesktopMode) {
       output.T3CODE_PORT = String(serverPort);
-      output.VITE_HTTP_URL = `http://localhost:${serverPort}`;
-      output.VITE_WS_URL = `ws://localhost:${serverPort}`;
+      const publicHost = baseEnv.T3CODE_PUBLIC_HOST?.trim();
+      if (publicHost) {
+        output.VITE_HTTP_URL = `http://${publicHost}:${webPort}`;
+        output.VITE_WS_URL = `ws://${publicHost}:${webPort}`;
+        output.T3CODE_DEV_PROXY_URL = `http://127.0.0.1:${serverPort}`;
+      } else {
+        output.VITE_HTTP_URL = `http://localhost:${serverPort}`;
+        output.VITE_WS_URL = `ws://localhost:${serverPort}`;
+        delete output.T3CODE_DEV_PROXY_URL;
+      }
     } else {
       output.T3CODE_PORT = String(serverPort);
       output.VITE_HTTP_URL = `http://${DESKTOP_DEV_LOOPBACK_HOST}:${serverPort}`;

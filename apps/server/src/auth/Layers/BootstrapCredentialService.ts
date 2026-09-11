@@ -2,7 +2,9 @@ import type { AuthPairingLink } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import * as Path from "effect/Path";
 import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
@@ -36,6 +38,8 @@ type ConsumeResult =
     };
 
 const DEFAULT_ONE_TIME_TOKEN_TTL_MINUTES = Duration.minutes(5);
+const DEFAULT_PERSISTENT_BOOTSTRAP_TTL = Duration.days(3650);
+const PERSISTENT_BOOTSTRAP_TOKEN_FILE = "persistent-bootstrap.token";
 const PAIRING_TOKEN_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PAIRING_TOKEN_LENGTH = 12;
 
@@ -44,6 +48,24 @@ const generatePairingToken = (): string => {
 
   return Array.from(randomBytes, (value) => PAIRING_TOKEN_ALPHABET[value & 31]).join("");
 };
+
+const loadPersistentBootstrapToken = (secretsDir: string) =>
+  Effect.gen(function* () {
+    const fromEnv = process.env.T3CODE_PERSISTENT_BOOTSTRAP_TOKEN?.trim() ?? "";
+    if (fromEnv.length > 0) {
+      return fromEnv;
+    }
+
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const tokenPath = path.join(secretsDir, PERSISTENT_BOOTSTRAP_TOKEN_FILE);
+    if (!(yield* fs.exists(tokenPath))) {
+      return null;
+    }
+
+    const token = (yield* fs.readFileString(tokenPath)).trim();
+    return token.length > 0 ? token : null;
+  }).pipe(Effect.catch(() => Effect.succeed(null)));
 
 export const makeBootstrapCredentialService = Effect.gen(function* () {
   const config = yield* ServerConfig;
@@ -93,6 +115,21 @@ export const makeBootstrapCredentialService = Effect.gen(function* () {
         milliseconds: Duration.toMillis(DEFAULT_ONE_TIME_TOKEN_TTL_MINUTES),
       }),
       remainingUses: 1,
+    });
+  }
+
+  const persistentBootstrapToken = yield* loadPersistentBootstrapToken(config.secretsDir);
+  if (persistentBootstrapToken) {
+    const now = yield* DateTime.now;
+    yield* seedGrant(persistentBootstrapToken, {
+      method: "one-time-token",
+      role: "owner",
+      subject: "persistent-bootstrap",
+      label: "persistent-bootstrap",
+      expiresAt: DateTime.add(now, {
+        milliseconds: Duration.toMillis(DEFAULT_PERSISTENT_BOOTSTRAP_TTL),
+      }),
+      remainingUses: "unbounded",
     });
   }
 

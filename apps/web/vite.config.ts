@@ -7,6 +7,13 @@ import pkg from "./package.json" with { type: "json" };
 
 const port = Number(process.env.PORT ?? 5733);
 const host = process.env.HOST?.trim() || "localhost";
+const allowedHosts = Array.from(
+  new Set(
+    ["localhost", "127.0.0.1", host, "cobec-spark", ...(process.env.T3CODE_ALLOWED_HOSTS?.split(",") ?? [])]
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ),
+);
 const configuredWsUrl = process.env.VITE_WS_URL?.trim();
 const configuredHostedAppChannel = process.env.VITE_HOSTED_APP_CHANNEL?.trim() || "";
 const configuredAppVersion = process.env.APP_VERSION?.trim() || pkg.version;
@@ -53,7 +60,11 @@ function resolveDevProxyTarget(wsUrl: string | undefined): string | undefined {
   }
 }
 
-const devProxyTarget = resolveDevProxyTarget(configuredWsUrl);
+const configuredDevProxyUrl = process.env.T3CODE_DEV_PROXY_URL?.trim();
+const devProxyTarget =
+  configuredDevProxyUrl ||
+  resolveDevProxyTarget(configuredWsUrl) ||
+  (process.env.T3CODE_PORT ? `http://127.0.0.1:${process.env.T3CODE_PORT}` : undefined);
 
 export default defineConfig({
   plugins: [
@@ -91,6 +102,7 @@ export default defineConfig({
   server: {
     host,
     port,
+    allowedHosts,
     strictPort: true,
     ...(devProxyTarget
       ? {
@@ -106,6 +118,11 @@ export default defineConfig({
             "/attachments": {
               target: devProxyTarget,
               changeOrigin: true,
+            },
+            "/ws": {
+              target: devProxyTarget,
+              changeOrigin: true,
+              ws: true,
             },
           },
         }

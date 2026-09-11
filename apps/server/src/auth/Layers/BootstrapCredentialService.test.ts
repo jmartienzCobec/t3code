@@ -1,3 +1,7 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
 import * as Duration from "effect/Duration";
@@ -13,6 +17,7 @@ import { BootstrapCredentialServiceLive } from "./BootstrapCredentialService.ts"
 
 const makeServerConfigLayer = (
   overrides?: Partial<Pick<ServerConfigShape, "desktopBootstrapToken">>,
+  baseDir?: string,
 ) =>
   Layer.effect(
     ServerConfig,
@@ -24,15 +29,21 @@ const makeServerConfigLayer = (
       } satisfies ServerConfigShape;
     }),
   ).pipe(
-    Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "t3-auth-bootstrap-test-" })),
+    Layer.provide(
+      ServerConfig.layerTest(
+        process.cwd(),
+        baseDir ?? { prefix: "t3-auth-bootstrap-test-" },
+      ),
+    ),
   );
 
 const makeBootstrapCredentialLayer = (
   overrides?: Partial<Pick<ServerConfigShape, "desktopBootstrapToken">>,
+  baseDir?: string,
 ) =>
   BootstrapCredentialServiceLive.pipe(
     Layer.provide(SqlitePersistenceMemory),
-    Layer.provide(makeServerConfigLayer(overrides)),
+    Layer.provide(makeServerConfigLayer(overrides, baseDir)),
   );
 
 it.layer(NodeServices.layer)("BootstrapCredentialServiceLive", (it) => {
@@ -128,6 +139,28 @@ it.layer(NodeServices.layer)("BootstrapCredentialServiceLive", (it) => {
       ),
     ),
   );
+
+  it.effect("reuses a persistent bootstrap token from secrets until it expires", () => {
+    const baseDir = mkdtempSync(join(tmpdir(), "t3-auth-bootstrap-persistent-"));
+    const secretsDir = join(baseDir, "userdata", "secrets");
+    mkdirSync(secretsDir, { recursive: true });
+    writeFileSync(join(secretsDir, "persistent-bootstrap.token"), "spark-persistent-token\n", {
+      mode: 0o600,
+    });
+
+    return Effect.gen(function* () {
+      const bootstrapCredentials = yield* BootstrapCredentialService;
+      const first = yield* bootstrapCredentials.consume("spark-persistent-token");
+      const second = yield* bootstrapCredentials.consume("spark-persistent-token");
+
+      expect(first.method).toBe("one-time-token");
+      expect(first.role).toBe("owner");
+      expect(first.subject).toBe("persistent-bootstrap");
+      expect(first.label).toBe("persistent-bootstrap");
+      expect(second.method).toBe("one-time-token");
+      expect(second.role).toBe("owner");
+    }).pipe(Effect.provide(makeBootstrapCredentialLayer(undefined, baseDir)));
+  });
 
   it.effect("lists and revokes active pairing links", () =>
     Effect.gen(function* () {
